@@ -2,9 +2,19 @@ import sqlite3
 import os
 from typing import List, Dict, Optional
 
-# Get the directory containing this file
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DB_PATH = os.path.join(BASE_DIR, "german_vocab.db")
+# Check if we're on PythonAnywhere
+ON_PYTHONANYWHERE = 'PYTHONANYWHERE_DOMAIN' in os.environ
+
+if ON_PYTHONANYWHERE:
+    # Use PythonAnywhere's project directory with correct case
+    BASE_DIR = '/home/AnjaBuckley/wortwunder/wortwunder-backend-flask'
+    DB_PATH = os.path.join(BASE_DIR, "german_vocab.db")
+else:
+    # Local development path
+    BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    DB_PATH = os.path.join(BASE_DIR, "german_vocab.db")
+
+print(f"Database will be created at: {DB_PATH}")
 
 
 def dict_factory(cursor, row):
@@ -15,18 +25,25 @@ def dict_factory(cursor, row):
 
 
 def get_db_connection():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = dict_factory
-    return conn
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = dict_factory
+        print(f"Successfully connected to database at {DB_PATH}")
+        return conn
+    except Exception as e:
+        print(f"Error connecting to database: {e}")
+        raise
 
 
 def init_db():
+    print(f"Initializing database at {DB_PATH}")
     conn = get_db_connection()
     cursor = conn.cursor()
 
     # Drop existing tables to ensure clean slate
     cursor.execute("DROP TABLE IF EXISTS vocabulary")
     cursor.execute("DROP TABLE IF EXISTS word_groups")
+    print("Dropped existing tables")
 
     # Create word_groups table
     cursor.execute("""
@@ -49,6 +66,7 @@ def init_db():
         FOREIGN KEY (word_group_id) REFERENCES word_groups (id)
     )
     """)
+    print("Created database tables")
 
     # Insert default word groups
     default_groups = [
@@ -64,6 +82,7 @@ def init_db():
         "INSERT OR IGNORE INTO word_groups (name, description) VALUES (?, ?)",
         default_groups,
     )
+    print(f"Inserted {len(default_groups)} word groups")
 
     # Add some new sample words if we didn't have existing ones
     sample_data = [
@@ -318,9 +337,11 @@ def init_db():
         """,
         sample_data,
     )
+    print(f"Inserted {len(sample_data)} vocabulary items")
 
     conn.commit()
     conn.close()
+    print("Database initialization complete")
 
 
 def get_word_groups() -> List[Dict]:
@@ -387,8 +408,7 @@ def get_vocabulary(level=None, word_group_id=None):
             'word_group_id': row['word_group_id']
         })
     
+    print(f"Retrieved {len(vocabulary)} vocabulary items")
     return vocabulary
 
-
-# Initialize the database when this module is imported
-init_db()
+# Remove automatic initialization - it will be called from wsgi.py

@@ -37,13 +37,34 @@ interface FetchError extends Error {
 export const getVocabulary = async (level: CEFRLevel = 'All Levels'): Promise<VocabularyItem[]> => {
   try {
     const url = `${API_BASE_URL}/api/vocabulary${level !== 'All Levels' ? `?level=${level}` : ''}`;
+    console.log('Attempting to fetch from URL:', url);
+    
     const response = await fetch(url);
+    console.log('Response status:', response.status);
+    console.log('Response headers:', response.headers);
+    
     if (!response.ok) {
-      throw new Error('Failed to fetch vocabulary');
+      const errorText = await response.text();
+      console.error('Response not OK:', {
+        status: response.status,
+        statusText: response.statusText,
+        errorText
+      });
+      throw new Error(`Failed to fetch vocabulary: ${response.status} ${response.statusText}`);
     }
-    return await response.json();
+    
+    const data = await response.json();
+    console.log('Successfully fetched data:', {
+      itemCount: data.length,
+      sampleItem: data[0]
+    });
+    return data;
   } catch (error) {
-    console.error('Error:', error);
+    console.error('Error in getVocabulary:', {
+      error,
+      API_BASE_URL,
+      level
+    });
     return [];
   }
 };
