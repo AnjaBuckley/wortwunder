@@ -1,0 +1,52 @@
+id,german_word,english_translation,theme
+,das Essen,food,food
+,das Restaurant, restaurant, food
+,das Café,café,food
+,die Bar,bar,food
+,die Speisekarte,menu,food
+,die Vorspeise,starter,food
+,die Hauptspeise,main course,food
+,der Nachtisch,dessert,food
+,die Rechnung,bill,food
+,vegetarisch,vegetarian,food
+,vegan,vegan,food
+,glutenfrei,gluten-free,food
+,der Fisch,fish,food
+,das Fleisch,meat,food
+,der Salat,salad,food
+,die Milch,milk,food
+,der Käse,cheese,food
+,das Obst,fruits,food
+,das Gemüse,vegetables,food
+,die Nüsse,nuts,food
+,der Kaffee,coffee,food
+,der Tee,tea,food
+,das Wasser,water,food
+,der Wein,wine,food
+,das Bier,beer,food
+,alkoholfrei,non-alcoholic,food
+,Prost!,Cheers!,food
+,der Zug,train,transport
+,der Bus,bus,transport
+,das Auto,car,transport
+,die Straßenbahn,tram,transport
+,das Taxi,"taxi, cab",transport
+,das Fahrrad,bicycle,transport
+,zu Fuß,on foot,transport
+,der Bahnhof,train station,transport
+,der Busbahnhof,bus station,transport
+,die Haltestelle,stop,transport
+,die U-Bahn,subway,transport
+,die U-Bahnstation,subway station,transport
+,die S-Bahn,S-Bahn,transport
+,die S-Bahnstation,S-Bahn station,transport
+,die Tramstation,tram station,transport
+,das Internet,internet,technology
+,das Passwort,password,technology
+,der Computer,computer,technology
+,die Steckdose,socket,technology
+,aufladen,to recharge,technology
+,die Batterie,battery,technology
+
+
+
