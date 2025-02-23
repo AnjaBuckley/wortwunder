@@ -4,7 +4,7 @@
 
 [build.environment]
   NODE_VERSION = "18"
-  VITE_API_URL = "https://wortwunder.pythonanywhere.com"
+  VITE_API_URL = "https://anjabuckley.pythonanywhere.com"
 
 [[redirects]]
   from = "/*"
