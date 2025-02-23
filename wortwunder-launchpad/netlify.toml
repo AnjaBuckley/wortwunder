@@ -1,10 +1,10 @@
 [build]
-  base = "wortwunder-launchpad"
-  command = "npm run build"
+  command = "npm install && npm run build"
   publish = "dist"
 
 [build.environment]
   NODE_VERSION = "18"
+  VITE_API_URL = "https://wortwunder.pythonanywhere.com"
 
 [[redirects]]
   from = "/*"
