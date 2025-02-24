@@ -5,6 +5,7 @@ import { LevelSelector, CEFRLevel } from '@/components/games/level-selector';
 import { SpeakButton } from '@/components/ui/speak-button';
 import { useTextToSpeech } from '@/hooks/use-text-to-speech';
 import { LanguageToggle } from '@/components/ui/language-toggle';
+import { addStudySession } from '@/pages/api/study-sessions';
 
 interface FlashcardItem extends VocabularyItem {
   correctCount: number;
@@ -75,6 +76,21 @@ const Flashcards = () => {
       updatedCard.correctCount = 0;
       updatedCards.push(updatedCard);
       setRemainingCards(updatedCards);
+    }
+
+    // Check if this was the last card and all words are mastered
+    if (updatedCards.length === 0) {
+      console.log('Game completed! Adding study session...');
+      addStudySession('flashcards')
+        .then(() => console.log('Successfully added study session'))
+        .catch(error => {
+          console.error('Error adding study session:', error);
+          // Log more details about the error
+          if (error instanceof Error) {
+            console.error('Error message:', error.message);
+            console.error('Error stack:', error.stack);
+          }
+        });
     }
 
     setCurrentCard(null);

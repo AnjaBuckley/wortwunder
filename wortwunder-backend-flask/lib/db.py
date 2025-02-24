@@ -35,7 +35,90 @@ def get_db_connection():
         raise
 
 
-def init_db():
+def initialize_database():
+    create_tables()
+    if is_database_empty():
+        insert_initial_data()
+
+
+def create_tables():
+    conn = get_db_connection()
+    c = conn.cursor()
+
+    # Create word_groups table
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS word_groups (
+            id INTEGER PRIMARY KEY,
+            name TEXT NOT NULL,
+            description TEXT
+        )
+    ''')
+
+    # Create vocabulary table
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS vocabulary (
+            id INTEGER PRIMARY KEY,
+            german_word TEXT NOT NULL,
+            english_translation TEXT NOT NULL,
+            theme TEXT,
+            cefr_level TEXT,
+            word_group_id INTEGER,
+            example_sentence TEXT,
+            example_sentence_translation TEXT,
+            FOREIGN KEY (word_group_id) REFERENCES word_groups (id)
+        )
+    ''')
+
+    # Create favorites table
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS favorites (
+            id INTEGER PRIMARY KEY,
+            vocabulary_id INTEGER,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (vocabulary_id) REFERENCES vocabulary (id)
+        )
+    ''')
+
+    # Create study_sessions table
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS study_sessions (
+            id INTEGER PRIMARY KEY,
+            activity_type TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+
+    # Create study_session_vocabulary table
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS study_session_vocabulary (
+            id INTEGER PRIMARY KEY,
+            study_session_id INTEGER,
+            vocabulary_id INTEGER,
+            FOREIGN KEY (study_session_id) REFERENCES study_sessions (id),
+            FOREIGN KEY (vocabulary_id) REFERENCES vocabulary (id)
+        )
+    ''')
+
+    conn.commit()
+    conn.close()
+
+
+def is_database_empty():
+    conn = get_db_connection()
+    c = conn.cursor()
+    
+    try:
+        c.execute('SELECT COUNT(*) FROM vocabulary')
+        result = c.fetchone()
+        return result[0] == 0 if result else True
+    except:
+        # If table doesn't exist, consider database empty
+        return True
+    finally:
+        conn.close()
+
+
+def insert_initial_data():
     print(f"Initializing database at {DB_PATH}")
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -44,6 +127,8 @@ def init_db():
     cursor.execute("DROP TABLE IF EXISTS vocabulary")
     cursor.execute("DROP TABLE IF EXISTS word_groups")
     cursor.execute("DROP TABLE IF EXISTS favorites")
+    cursor.execute("DROP TABLE IF EXISTS study_sessions")
+    cursor.execute("DROP TABLE IF EXISTS study_session_vocabulary")
     print("Dropped existing tables")
 
     # Create word_groups table
@@ -78,6 +163,26 @@ def init_db():
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (vocabulary_id) REFERENCES vocabulary (id),
         UNIQUE(vocabulary_id)
+    )
+    """)
+
+    # Create study_sessions table
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS study_sessions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        activity_type TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
+    # Create study_session_vocabulary table
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS study_session_vocabulary (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        study_session_id INTEGER,
+        vocabulary_id INTEGER,
+        FOREIGN KEY (study_session_id) REFERENCES study_sessions (id),
+        FOREIGN KEY (vocabulary_id) REFERENCES vocabulary (id)
     )
     """)
 
@@ -262,7 +367,7 @@ def get_vocabulary(level=None, word_group_id=None):
     conn = get_db_connection()
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
-    
+
     if level and level != "All Levels":
         cursor.execute("""
             SELECT v.*, CASE WHEN f.id IS NOT NULL THEN 1 ELSE 0 END as is_favorite 
@@ -278,10 +383,10 @@ def get_vocabulary(level=None, word_group_id=None):
             LEFT JOIN favorites f ON v.id = f.vocabulary_id 
             ORDER BY v.german_word
         """)
-    
+
     result = cursor.fetchall()
     conn.close()
-    
+
     vocabulary = []
     for row in result:
         vocabulary.append({
@@ -295,8 +400,59 @@ def get_vocabulary(level=None, word_group_id=None):
             'example_sentence_translation': row['example_sentence_translation'],
             'is_favorite': row['is_favorite']
         })
-    
+
     print(f"Retrieved {len(vocabulary)} vocabulary items")
     return vocabulary
+
+
+def get_study_sessions_count():
+    conn = get_db_connection()
+    c = conn.cursor()
+
+    c.execute('SELECT COUNT(*) as count FROM study_sessions')
+    result = c.fetchone()
+    count = result['count'] if result else 0
+
+    conn.close()
+    return count
+
+
+def create_study_session(activity_type):
+    conn = None
+    try:
+        conn = get_db_connection()
+        c = conn.cursor()
+        c.execute('INSERT INTO study_sessions (activity_type) VALUES (?)', (activity_type,))
+        conn.commit()
+        return True
+    except Exception as e:
+        print(f"Error in create_study_session: {e}")
+        return False
+    finally:
+        if conn:
+            conn.close()
+
+
+def add_vocabulary_to_study_session(study_session_id, vocabulary_id):
+    conn = get_db_connection()
+    c = conn.cursor()
+
+    c.execute('INSERT INTO study_session_vocabulary (study_session_id, vocabulary_id) VALUES (?, ?)', (study_session_id, vocabulary_id))
+
+    conn.commit()
+    conn.close()
+    return True
+
+
+def get_study_session_vocabulary(study_session_id):
+    conn = get_db_connection()
+    c = conn.cursor()
+
+    c.execute('SELECT v.* FROM vocabulary v JOIN study_session_vocabulary ssv ON v.id = ssv.vocabulary_id WHERE ssv.study_session_id = ?', (study_session_id,))
+
+    result = c.fetchall()
+    conn.close()
+    return result
+
 
 # Remove automatic initialization - it will be called from wsgi.py

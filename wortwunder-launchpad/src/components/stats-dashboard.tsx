@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Brain, Heart, Book, Trophy, Zap, Star, Target } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { getFavorites } from "@/pages/api/common-words";
+import { getStudySessionsCount } from "@/pages/api/study-sessions";
 
 interface Stats {
   favoriteWords: number;
@@ -21,14 +22,13 @@ export function StatsDashboard() {
     progress: 0
   });
 
-  useEffect(() => {
-    loadStats();
-  }, []);
-
   const loadStats = async () => {
     try {
       // Get favorite words count
       const favorites = await getFavorites();
+      
+      // Get study sessions count
+      const sessionsCount = await getStudySessionsCount();
       
       // Calculate progress percentage
       const progress = (favorites.length / stats.totalWords) * 100;
@@ -36,12 +36,24 @@ export function StatsDashboard() {
       setStats(prev => ({
         ...prev,
         favoriteWords: favorites.length,
+        studySessions: sessionsCount,
         progress: progress
       }));
     } catch (error) {
       console.error('Error loading stats:', error);
     }
   };
+
+  // Initial load
+  useEffect(() => {
+    loadStats();
+  }, []);
+
+  // Refresh stats every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(loadStats, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <div className="space-y-6">
