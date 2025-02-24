@@ -88,6 +88,7 @@ def init_db():
 
     # Insert initial vocabulary
     vocabulary_data = [
+        # A1 Level - Basic Words with Example Sentences
         ("Hallo", "hello", "Greetings", "A1", None, "Hallo, wie geht es dir?", "Hello, how are you?"),
         ("Danke", "thank you", "Greetings", "A1", None, "Danke für deine Hilfe!", "Thank you for your help!"),
         ("Bitte", "please/you're welcome", "Greetings", "A1", None, "Bitte schön!", "You're welcome!"),
@@ -102,7 +103,42 @@ def init_db():
         ("lernen", "to learn", "Education", "A1", None, "Ich lerne Deutsch.", "I am learning German."),
         ("spielen", "to play", "Activities", "A1", None, "Die Kinder spielen im Park.", "The children are playing in the park."),
         ("laufen", "to run/walk", "Activities", "A1", None, "Ich laufe jeden Morgen.", "I run every morning."),
-        ("schlafen", "to sleep", "Activities", "A1", None, "Ich schlafe acht Stunden.", "I sleep for eight hours.")
+        ("schlafen", "to sleep", "Activities", "A1", None, "Ich schlafe acht Stunden.", "I sleep for eight hours."),
+
+        # A2 Level - With Example Sentences
+        ("Reise", "journey/trip", "Travel", "A2", None, "Die Reise nach Berlin war schön.", "The trip to Berlin was nice."),
+        ("buchen", "to book", "Travel", "A2", None, "Ich buche ein Hotelzimmer.", "I am booking a hotel room."),
+        ("Koffer", "suitcase", "Travel", "A2", None, "Mein Koffer ist schwer.", "My suitcase is heavy."),
+        ("Rucksack", "backpack", "Travel", "A2", None, "Der Rucksack ist praktisch.", "The backpack is practical."),
+        ("kaufen", "to buy", "General", "A2", None, "Ich kaufe neue Schuhe.", "I am buying new shoes."),
+
+        # B1 Level - With Example Sentences
+        ("Ausflug", "excursion", "Travel", "B1", None, "Wir machen einen Ausflug in die Berge.", "We are taking an excursion to the mountains."),
+        ("Sehenswürdigkeit", "sight/attraction", "Travel", "B1", None, "Die Sehenswürdigkeit ist sehr bekannt.", "The attraction is very well-known."),
+        ("Reiseführer", "travel guide", "Travel", "B1", None, "Der Reiseführer zeigt uns die Stadt.", "The tour guide shows us the city."),
+        ("verstehen", "to understand", "General", "B1", None, "Ich verstehe die Grammatik gut.", "I understand the grammar well."),
+        ("verkaufen", "to sell", "General", "B1", None, "Sie verkauft ihre alten Bücher.", "She is selling her old books."),
+
+        # B2 Level - With Example Sentences
+        ("Verantwortung", "responsibility", "General", "B2", None, "Sie übernimmt viel Verantwortung.", "She takes on a lot of responsibility."),
+        ("Möglichkeit", "possibility", "General", "B2", None, "Es gibt viele Möglichkeiten.", "There are many possibilities."),
+        ("Voraussetzung", "requirement", "General", "B2", None, "Das ist eine wichtige Voraussetzung.", "That is an important requirement."),
+        ("Zusammenhang", "connection", "General", "B2", None, "Der Zusammenhang ist klar.", "The connection is clear."),
+        ("wahrscheinlich", "probable", "General", "B2", None, "Das ist sehr wahrscheinlich.", "That is very probable."),
+
+        # C1 Level - With Example Sentences
+        ("Wahrnehmung", "perception", "General", "C1", None, "Die Wahrnehmung ist subjektiv.", "Perception is subjective."),
+        ("Auswirkung", "impact", "General", "C1", None, "Die Auswirkung ist bedeutend.", "The impact is significant."),
+        ("Nachhaltigkeit", "sustainability", "General", "C1", None, "Nachhaltigkeit ist wichtig für die Zukunft.", "Sustainability is important for the future."),
+        ("Herausforderung", "challenge", "General", "C1", None, "Das ist eine große Herausforderung.", "That is a big challenge."),
+        ("Entwicklung", "development", "General", "C1", None, "Die Entwicklung ist positiv.", "The development is positive."),
+
+        # C2 Level - With Example Sentences
+        ("Paradigmenwechsel", "paradigm shift", "General", "C2", None, "Ein Paradigmenwechsel ist notwendig.", "A paradigm shift is necessary."),
+        ("Weltanschauung", "worldview", "General", "C2", None, "Seine Weltanschauung ist interessant.", "His worldview is interesting."),
+        ("Fingerspitzengefühl", "intuitive flair", "General", "C2", None, "Sie hat viel Fingerspitzengefühl.", "She has a lot of intuitive flair."),
+        ("Querdenker", "lateral thinker", "General", "C2", None, "Er ist ein echter Querdenker.", "He is a true lateral thinker."),
+        ("Zeitgeist", "spirit of the age", "General", "C2", None, "Das entspricht dem Zeitgeist.", "That corresponds to the spirit of the age.")
     ]
 
     cursor.executemany(
