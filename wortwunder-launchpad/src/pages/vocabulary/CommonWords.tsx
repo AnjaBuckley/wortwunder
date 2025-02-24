@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { VocabularyItem, getVocabulary } from '@/pages/api/common-words';
-import { Book, ChevronLeft, ChevronRight } from "lucide-react";
+import { VocabularyItem, getVocabulary, addToFavorites, removeFromFavorites } from '@/pages/api/common-words';
+import { Book, ChevronLeft, ChevronRight, Heart } from "lucide-react";
 import { SpeakButton } from "@/components/ui/speak-button";
 import { Button } from "@/components/ui/button";
 import { useTextToSpeech } from "@/hooks/use-text-to-speech";
@@ -145,7 +145,8 @@ const CommonWords = () => {
       </div>
       
       {/* Table header */}
-      <div className="grid grid-cols-[auto,1fr,1fr,auto,auto] gap-4 px-4 py-2 bg-gray-100 rounded-t-lg font-semibold">
+      <div className="grid grid-cols-[auto,auto,1fr,1fr,auto,auto] gap-4 px-4 py-2 bg-gray-100 rounded-t-lg font-semibold">
+        <div></div>
         <div></div>
         <div>German</div>
         <div>English</div>
@@ -158,8 +159,30 @@ const CommonWords = () => {
         {paginatedVocabulary.map((item) => (
           <div 
             key={item.id} 
-            className="grid grid-cols-[auto,1fr,1fr,auto,auto] gap-4 p-4 border rounded-lg hover:bg-gray-50 transition-colors"
+            className="grid grid-cols-[auto,auto,1fr,1fr,auto,auto] gap-4 p-4 border rounded-lg hover:bg-gray-50 transition-colors"
           >
+            <Button
+              variant="ghost"
+              size="icon"
+              className={item.is_favorite ? "text-red-500 hover:text-red-600" : "text-gray-400 hover:text-gray-500"}
+              onClick={async () => {
+                try {
+                  if (item.is_favorite) {
+                    await removeFromFavorites(item.id);
+                  } else {
+                    await addToFavorites(item.id);
+                  }
+                  // Refresh the vocabulary list
+                  const data = await getVocabulary(selectedLevel);
+                  setVocabulary(data);
+                } catch (error) {
+                  console.error('Error toggling favorite:', error);
+                }
+              }}
+              title={item.is_favorite ? "Remove from favorites" : "Add to favorites"}
+            >
+              <Heart className={`h-4 w-4 ${item.is_favorite ? "fill-current" : ""}`} />
+            </Button>
             <SpeakButton 
               text={item.german_word} 
               onClick={() => speak(item.german_word)}

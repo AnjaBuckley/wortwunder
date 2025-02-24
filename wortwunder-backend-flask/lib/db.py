@@ -43,6 +43,7 @@ def init_db():
     # Drop existing tables to ensure clean slate
     cursor.execute("DROP TABLE IF EXISTS vocabulary")
     cursor.execute("DROP TABLE IF EXISTS word_groups")
+    cursor.execute("DROP TABLE IF EXISTS favorites")
     print("Dropped existing tables")
 
     # Create word_groups table
@@ -54,11 +55,11 @@ def init_db():
     )
     """)
 
-    # Create vocabulary table with word_group reference and explicit CEFR level
+    # Create vocabulary table
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS vocabulary (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        german_word TEXT NOT NULL UNIQUE,
+        german_word TEXT NOT NULL,
         english_translation TEXT NOT NULL,
         theme TEXT NOT NULL,
         cefr_level TEXT NOT NULL,
@@ -68,7 +69,17 @@ def init_db():
         FOREIGN KEY (word_group_id) REFERENCES word_groups (id)
     )
     """)
-    print("Created database tables")
+
+    # Create favorites table
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS favorites (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        vocabulary_id INTEGER NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (vocabulary_id) REFERENCES vocabulary (id),
+        UNIQUE(vocabulary_id)
+    )
+    """)
 
     # Insert default word groups
     default_groups = [
@@ -191,18 +202,82 @@ def add_vocabulary(
         return False
 
 
+def add_to_favorites(vocabulary_id: int) -> bool:
+    """Add a vocabulary item to favorites."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            "INSERT INTO favorites (vocabulary_id) VALUES (?)",
+            (vocabulary_id,)
+        )
+        conn.commit()
+        return True
+    except Exception as e:
+        print(f"Error adding to favorites: {e}")
+        return False
+    finally:
+        conn.close()
+
+
+def remove_from_favorites(vocabulary_id: int) -> bool:
+    """Remove a vocabulary item from favorites."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            "DELETE FROM favorites WHERE vocabulary_id = ?",
+            (vocabulary_id,)
+        )
+        conn.commit()
+        return True
+    except Exception as e:
+        print(f"Error removing from favorites: {e}")
+        return False
+    finally:
+        conn.close()
+
+
+def get_favorites() -> List[Dict]:
+    """Get all favorite vocabulary items."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            SELECT v.*, f.id as favorite_id 
+            FROM vocabulary v 
+            JOIN favorites f ON v.id = f.vocabulary_id 
+            ORDER BY v.german_word
+        """)
+        result = cursor.fetchall()
+        return result
+    except Exception as e:
+        print(f"Error getting favorites: {e}")
+        return []
+    finally:
+        conn.close()
+
+
 def get_vocabulary(level=None, word_group_id=None):
     conn = get_db_connection()
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     
     if level and level != "All Levels":
-        cursor.execute(
-            "SELECT * FROM vocabulary WHERE cefr_level = ? ORDER BY german_word",
-            (level,)
-        )
+        cursor.execute("""
+            SELECT v.*, CASE WHEN f.id IS NOT NULL THEN 1 ELSE 0 END as is_favorite 
+            FROM vocabulary v 
+            LEFT JOIN favorites f ON v.id = f.vocabulary_id 
+            WHERE v.cefr_level = ? 
+            ORDER BY v.german_word
+        """, (level,))
     else:
-        cursor.execute("SELECT * FROM vocabulary ORDER BY german_word")
+        cursor.execute("""
+            SELECT v.*, CASE WHEN f.id IS NOT NULL THEN 1 ELSE 0 END as is_favorite 
+            FROM vocabulary v 
+            LEFT JOIN favorites f ON v.id = f.vocabulary_id 
+            ORDER BY v.german_word
+        """)
     
     result = cursor.fetchall()
     conn.close()
@@ -217,7 +292,8 @@ def get_vocabulary(level=None, word_group_id=None):
             'cefr_level': row['cefr_level'],
             'word_group_id': row['word_group_id'],
             'example_sentence': row['example_sentence'],
-            'example_sentence_translation': row['example_sentence_translation']
+            'example_sentence_translation': row['example_sentence_translation'],
+            'is_favorite': row['is_favorite']
         })
     
     print(f"Retrieved {len(vocabulary)} vocabulary items")

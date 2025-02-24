@@ -24,6 +24,7 @@ export interface VocabularyItem {
   word_group_name?: string;
   example_sentence?: string;
   example_sentence_translation?: string;
+  is_favorite?: boolean;
 }
 
 interface FetchError extends Error {
@@ -52,21 +53,59 @@ export const getVocabulary = async (level: CEFRLevel = 'All Levels'): Promise<Vo
         statusText: response.statusText,
         errorText
       });
-      throw new Error(`Failed to fetch vocabulary: ${response.status} ${response.statusText}`);
+      throw new Error(`Failed to fetch vocabulary: ${response.statusText}`);
     }
-    
+
     const data = await response.json();
-    console.log('Successfully fetched data:', {
-      itemCount: data.length,
-      sampleItem: data[0]
-    });
+    console.log('Successfully fetched vocabulary data');
     return data;
   } catch (error) {
-    console.error('Error in getVocabulary:', {
-      error,
-      API_BASE_URL,
-      level
+    console.error('Error fetching vocabulary:', error);
+    throw error;
+  }
+};
+
+export const addToFavorites = async (vocabularyId: number): Promise<void> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/favorites/${vocabularyId}`, {
+      method: 'POST',
     });
-    return [];
+    
+    if (!response.ok) {
+      throw new Error('Failed to add to favorites');
+    }
+  } catch (error) {
+    console.error('Error adding to favorites:', error);
+    throw error;
+  }
+};
+
+export const removeFromFavorites = async (vocabularyId: number): Promise<void> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/favorites/${vocabularyId}`, {
+      method: 'DELETE',
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to remove from favorites');
+    }
+  } catch (error) {
+    console.error('Error removing from favorites:', error);
+    throw error;
+  }
+};
+
+export const getFavorites = async (): Promise<VocabularyItem[]> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/favorites`);
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch favorites');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching favorites:', error);
+    throw error;
   }
 };
