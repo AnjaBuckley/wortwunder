@@ -3,6 +3,7 @@ import { VocabularyItem, getVocabulary } from '@/pages/api/common-words';
 import { Book, ChevronLeft, ChevronRight } from "lucide-react";
 import { SpeakButton } from "@/components/ui/speak-button";
 import { Button } from "@/components/ui/button";
+import { useTextToSpeech } from "@/hooks/use-text-to-speech";
 import {
   Select,
   SelectContent,
@@ -22,6 +23,7 @@ const CommonWords = () => {
   const [selectedLevel, setSelectedLevel] = useState<string>('All Levels');
   const [selectedTheme, setSelectedTheme] = useState<string>('All Themes');
   const [currentPage, setCurrentPage] = useState(1);
+  const { speak } = useTextToSpeech();
 
   useEffect(() => {
     const fetchVocabulary = async () => {
@@ -158,7 +160,10 @@ const CommonWords = () => {
             key={item.id} 
             className="grid grid-cols-[auto,1fr,1fr,auto,auto] gap-4 p-4 border rounded-lg hover:bg-gray-50 transition-colors"
           >
-            <SpeakButton text={item.german_word} />
+            <SpeakButton 
+              text={item.german_word} 
+              onClick={() => speak(item.german_word)}
+            />
             <div className="font-semibold">{item.german_word}</div>
             <div className="text-muted-foreground">{item.english_translation}</div>
             <div className="text-sm text-gray-600 px-2 py-1 bg-gray-100 rounded">
