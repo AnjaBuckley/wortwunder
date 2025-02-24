@@ -22,6 +22,8 @@ export interface VocabularyItem {
   cefr_level: string;
   word_group_id?: number;
   word_group_name?: string;
+  example_sentence?: string;
+  example_sentence_translation?: string;
 }
 
 interface FetchError extends Error {

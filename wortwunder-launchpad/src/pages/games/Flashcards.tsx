@@ -160,6 +160,14 @@ const Flashcards = () => {
                     />
                   )}
                 </div>
+                {/* Show example sentence when card is flipped */}
+                {isFlipped && currentCard.example_sentence && (
+                  <div className="mt-6 text-center">
+                    <p className="text-sm text-muted-foreground mb-1">Example:</p>
+                    <p className="text-lg mb-1">{currentCard.example_sentence}</p>
+                    <p className="text-md text-muted-foreground">{currentCard.example_sentence_translation}</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
