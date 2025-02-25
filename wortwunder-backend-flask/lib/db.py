@@ -1,6 +1,7 @@
 import sqlite3
 import os
 from typing import List, Dict, Optional
+from werkzeug.security import generate_password_hash, check_password_hash
 
 # Check if we're on PythonAnywhere
 ON_PYTHONANYWHERE = 'PYTHONANYWHERE_DOMAIN' in os.environ
@@ -45,6 +46,17 @@ def create_tables():
     conn = get_db_connection()
     c = conn.cursor()
 
+    # Create users table
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY,
+            username TEXT UNIQUE NOT NULL,
+            email TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+
     # Create word_groups table
     c.execute('''
         CREATE TABLE IF NOT EXISTS word_groups (
@@ -69,22 +81,27 @@ def create_tables():
         )
     ''')
 
-    # Create favorites table
+    # Create favorites table with user_id
     c.execute('''
         CREATE TABLE IF NOT EXISTS favorites (
             id INTEGER PRIMARY KEY,
+            user_id INTEGER NOT NULL,
             vocabulary_id INTEGER,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (vocabulary_id) REFERENCES vocabulary (id)
+            FOREIGN KEY (vocabulary_id) REFERENCES vocabulary (id),
+            FOREIGN KEY (user_id) REFERENCES users (id),
+            UNIQUE(user_id, vocabulary_id)
         )
     ''')
 
-    # Create study_sessions table
+    # Create study_sessions table with user_id
     c.execute('''
         CREATE TABLE IF NOT EXISTS study_sessions (
             id INTEGER PRIMARY KEY,
+            user_id INTEGER NOT NULL,
             activity_type TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users (id)
         )
     ''')
 
@@ -101,6 +118,159 @@ def create_tables():
 
     conn.commit()
     conn.close()
+
+
+def create_user(username: str, email: str, password: str) -> Optional[int]:
+    """Create a new user and return their ID."""
+    conn = get_db_connection()
+    c = conn.cursor()
+    try:
+        password_hash = generate_password_hash(password)
+        c.execute(
+            'INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)',
+            (username, email, password_hash)
+        )
+        conn.commit()
+        return c.lastrowid
+    except sqlite3.IntegrityError as e:
+        print(f"Error creating user: {e}")
+        return None
+    finally:
+        conn.close()
+
+
+def get_user_by_username(username: str) -> Optional[Dict]:
+    """Get user by username."""
+    conn = get_db_connection()
+    c = conn.cursor()
+    c.execute('SELECT * FROM users WHERE username = ?', (username,))
+    user = c.fetchone()
+    conn.close()
+    return user
+
+
+def verify_password(stored_password_hash: str, password: str) -> bool:
+    """Verify a password against its hash."""
+    return check_password_hash(stored_password_hash, password)
+
+
+def add_to_favorites(user_id: int, vocabulary_id: int) -> bool:
+    """Add a vocabulary item to user's favorites."""
+    conn = get_db_connection()
+    c = conn.cursor()
+    try:
+        c.execute(
+            'INSERT INTO favorites (user_id, vocabulary_id) VALUES (?, ?)',
+            (user_id, vocabulary_id)
+        )
+        conn.commit()
+        return True
+    except sqlite3.IntegrityError:
+        return False
+    finally:
+        conn.close()
+
+
+def remove_from_favorites(user_id: int, vocabulary_id: int) -> bool:
+    """Remove a vocabulary item from user's favorites."""
+    conn = get_db_connection()
+    c = conn.cursor()
+    try:
+        c.execute(
+            'DELETE FROM favorites WHERE user_id = ? AND vocabulary_id = ?',
+            (user_id, vocabulary_id)
+        )
+        conn.commit()
+        return True
+    except Exception as e:
+        print(f"Error removing from favorites: {e}")
+        return False
+    finally:
+        conn.close()
+
+
+def get_favorites(user_id: int) -> List[Dict]:
+    """Get all favorite vocabulary items for a user."""
+    conn = get_db_connection()
+    c = conn.cursor()
+    
+    c.execute('''
+        SELECT v.* FROM vocabulary v
+        JOIN favorites f ON v.id = f.vocabulary_id
+        WHERE f.user_id = ?
+        ORDER BY f.created_at DESC
+    ''', (user_id,))
+    
+    favorites = c.fetchall()
+    conn.close()
+    return favorites
+
+
+def get_study_sessions_count(user_id: int) -> int:
+    """Get count of study sessions for a user."""
+    conn = get_db_connection()
+    c = conn.cursor()
+
+    c.execute('SELECT COUNT(*) as count FROM study_sessions WHERE user_id = ?', (user_id,))
+    result = c.fetchone()
+    count = result['count'] if result else 0
+
+    conn.close()
+    return count
+
+
+def create_study_session(user_id: int, activity_type: str) -> bool:
+    """Add a new study session for a user."""
+    conn = None
+    try:
+        conn = get_db_connection()
+        c = conn.cursor()
+        c.execute(
+            'INSERT INTO study_sessions (user_id, activity_type) VALUES (?, ?)',
+            (user_id, activity_type)
+        )
+        conn.commit()
+        return True
+    except Exception as e:
+        print(f"Error in create_study_session: {e}")
+        return False
+    finally:
+        if conn:
+            conn.close()
+
+
+def add_vocabulary_to_study_session(study_session_id: int, vocabulary_id: int) -> bool:
+    """Add a vocabulary item to a study session."""
+    conn = get_db_connection()
+    c = conn.cursor()
+    try:
+        c.execute(
+            'INSERT INTO study_session_vocabulary (study_session_id, vocabulary_id) VALUES (?, ?)',
+            (study_session_id, vocabulary_id)
+        )
+        conn.commit()
+        return True
+    except Exception as e:
+        print(f"Error adding vocabulary to study session: {e}")
+        return False
+    finally:
+        conn.close()
+
+
+def get_study_session_vocabulary(study_session_id: int) -> List[Dict]:
+    """Get all vocabulary items for a study session."""
+    conn = get_db_connection()
+    c = conn.cursor()
+    
+    c.execute('''
+        SELECT v.* FROM vocabulary v
+        JOIN study_session_vocabulary ssv ON v.id = ssv.vocabulary_id
+        WHERE ssv.study_session_id = ?
+    ''', (study_session_id,))
+    
+    vocabulary = c.fetchall()
+    conn.close()
+    return vocabulary
 
 
 def is_database_empty():
@@ -159,10 +329,12 @@ def insert_initial_data():
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS favorites (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
         vocabulary_id INTEGER NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (vocabulary_id) REFERENCES vocabulary (id),
-        UNIQUE(vocabulary_id)
+        FOREIGN KEY (user_id) REFERENCES users (id),
+        UNIQUE(user_id, vocabulary_id)
     )
     """)
 
@@ -170,8 +342,10 @@ def insert_initial_data():
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS study_sessions (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
         activity_type TEXT NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users (id)
     )
     """)
 
@@ -286,79 +460,55 @@ def add_vocabulary(
     theme: str,
     cefr_level: str,
     word_group_id: Optional[int] = None,
-) -> bool:
-    """Add a new vocabulary item"""
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute(
-            """
-            INSERT INTO vocabulary 
-            (german_word, english_translation, theme, cefr_level, word_group_id)
-            VALUES (?, ?, ?, ?, ?)
-            """,
-            (german_word, english_translation, theme, cefr_level, word_group_id),
-        )
-        conn.commit()
-        conn.close()
-        return True
-    except Exception as e:
-        print(f"Error adding vocabulary: {e}")
-        return False
-
-
-def add_to_favorites(vocabulary_id: int) -> bool:
-    """Add a vocabulary item to favorites."""
+    example_sentence: Optional[str] = None,
+    example_sentence_translation: Optional[str] = None
+) -> int:
+    """
+    Add a new vocabulary item to the database.
+    
+    Args:
+        german_word: The German word
+        english_translation: English translation
+        theme: Theme or category of the word
+        cefr_level: CEFR level (A1, A2, B1, B2, C1, C2)
+        word_group_id: Optional ID of the word group
+        example_sentence: Optional example sentence in German
+        example_sentence_translation: Optional English translation of the example sentence
+    
+    Returns:
+        The ID of the newly created vocabulary item
+    
+    Raises:
+        sqlite3.Error: If there's a database error
+    """
     conn = get_db_connection()
     cursor = conn.cursor()
+    
     try:
-        cursor.execute(
-            "INSERT INTO favorites (vocabulary_id) VALUES (?)",
-            (vocabulary_id,)
-        )
+        cursor.execute('''
+            INSERT INTO vocabulary (
+                german_word,
+                english_translation,
+                theme,
+                cefr_level,
+                word_group_id,
+                example_sentence,
+                example_sentence_translation
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''', (
+            german_word,
+            english_translation,
+            theme,
+            cefr_level,
+            word_group_id,
+            example_sentence,
+            example_sentence_translation
+        ))
         conn.commit()
-        return True
-    except Exception as e:
-        print(f"Error adding to favorites: {e}")
-        return False
-    finally:
-        conn.close()
-
-
-def remove_from_favorites(vocabulary_id: int) -> bool:
-    """Remove a vocabulary item from favorites."""
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    try:
-        cursor.execute(
-            "DELETE FROM favorites WHERE vocabulary_id = ?",
-            (vocabulary_id,)
-        )
-        conn.commit()
-        return True
-    except Exception as e:
-        print(f"Error removing from favorites: {e}")
-        return False
-    finally:
-        conn.close()
-
-
-def get_favorites() -> List[Dict]:
-    """Get all favorite vocabulary items."""
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    try:
-        cursor.execute("""
-            SELECT v.*, f.id as favorite_id 
-            FROM vocabulary v 
-            JOIN favorites f ON v.id = f.vocabulary_id 
-            ORDER BY v.german_word
-        """)
-        result = cursor.fetchall()
-        return result
-    except Exception as e:
-        print(f"Error getting favorites: {e}")
-        return []
+        return cursor.lastrowid
+    except sqlite3.IntegrityError as e:
+        conn.rollback()
+        raise Exception(f"Failed to add vocabulary: {str(e)}")
     finally:
         conn.close()
 
@@ -403,56 +553,3 @@ def get_vocabulary(level=None, word_group_id=None):
 
     print(f"Retrieved {len(vocabulary)} vocabulary items")
     return vocabulary
-
-
-def get_study_sessions_count():
-    conn = get_db_connection()
-    c = conn.cursor()
-
-    c.execute('SELECT COUNT(*) as count FROM study_sessions')
-    result = c.fetchone()
-    count = result['count'] if result else 0
-
-    conn.close()
-    return count
-
-
-def create_study_session(activity_type):
-    conn = None
-    try:
-        conn = get_db_connection()
-        c = conn.cursor()
-        c.execute('INSERT INTO study_sessions (activity_type) VALUES (?)', (activity_type,))
-        conn.commit()
-        return True
-    except Exception as e:
-        print(f"Error in create_study_session: {e}")
-        return False
-    finally:
-        if conn:
-            conn.close()
-
-
-def add_vocabulary_to_study_session(study_session_id, vocabulary_id):
-    conn = get_db_connection()
-    c = conn.cursor()
-
-    c.execute('INSERT INTO study_session_vocabulary (study_session_id, vocabulary_id) VALUES (?, ?)', (study_session_id, vocabulary_id))
-
-    conn.commit()
-    conn.close()
-    return True
-
-
-def get_study_session_vocabulary(study_session_id):
-    conn = get_db_connection()
-    c = conn.cursor()
-
-    c.execute('SELECT v.* FROM vocabulary v JOIN study_session_vocabulary ssv ON v.id = ssv.vocabulary_id WHERE ssv.study_session_id = ?', (study_session_id,))
-
-    result = c.fetchall()
-    conn.close()
-    return result
-
-
-# Remove automatic initialization - it will be called from wsgi.py
