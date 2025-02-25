@@ -102,7 +102,6 @@ def get_vocabulary_list():
 
 
 @app.route('/api/vocabulary/import', methods=['POST'])
-@login_required
 def import_vocabulary():
     try:
         data = request.get_json()
