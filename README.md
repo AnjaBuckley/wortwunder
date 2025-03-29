@@ -2,6 +2,21 @@
 
 WortWunder is an interactive German language learning platform featuring multiple engaging games to help students practice vocabulary, spelling, and comprehension.
 
+<img width="1500" alt="Screenshot 2025-03-29 at 16 23 25" src="https://github.com/user-attachments/assets/8b695dff-e595-4d5d-b83a-5f1caa7c4b24" />
+
+<img width="1496" alt="Screenshot 2025-03-29 at 16 23 35" src="https://github.com/user-attachments/assets/85493756-e644-4a35-a62b-7ec913343aa8" />
+
+<img width="1500" alt="Screenshot 2025-03-29 at 16 23 43" src="https://github.com/user-attachments/assets/99ea0414-3db1-4779-9727-93f53a4ba8c7" />
+
+
+<img width="1508" alt="Screenshot 2025-03-29 at 16 23 53" src="https://github.com/user-attachments/assets/9a0f86de-52d0-4dbb-9f3d-2edf0e1aeefb" />
+
+
+<img width="1501" alt="Screenshot 2025-03-29 at 16 24 01" src="https://github.com/user-attachments/assets/f4953994-6db7-4e20-8f17-a1be13f12158" />
+
+
+
+
 ## Features
 
 - **Multiple Choice Quiz**: Test vocabulary knowledge with interactive multiple-choice questions
