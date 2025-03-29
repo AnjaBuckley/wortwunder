@@ -132,7 +132,7 @@ sqlite3 instance/vocabulary.db ".restore 'backup.db'"
 
 ### Deployment URLs
 - Frontend: https://lucent-griffin-a98935.netlify.app
-- Backend API: https://anjabuckley.pythonanywhere.com
+- Backend API: https://mimivader.pythonanywhere.com
 
 ### Deployment Setup
 
